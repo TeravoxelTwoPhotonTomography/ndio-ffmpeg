@@ -21,38 +21,39 @@ endmacro()
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
 set(ROOT_3RDPARTY_DIR ${PROJECT_SOURCE_DIR})
 
+find_package(ND     CONFIG PATHS cmake)
 find_package(FFMPEG CONFIG PATHS cmake)
-if(FFMPEG_FOUND)
-  include_directories(${FFMPEG_INCLUDE_DIR})
 
-  get_directory_property(ND_SOURCE_DIR PARENT_DIRECTORY)
+include_directories(${ND_INCLUDE_DIR})
+include_directories(${FFMPEG_INCLUDE_DIR})
 
-  include_directories(${ND_SOURCE_DIR}) # from parent scope
+get_directory_property(ND_SOURCE_DIR PARENT_DIRECTORY)
 
-  ##############################################################################
-  # SOURCE
-  ##############################################################################
+include_directories(${ND_SOURCE_DIR}) # from parent scope
 
-  file(GLOB SRCS src/*.c)
-  file(GLOB HDRS src/*.h)
+##############################################################################
+# SOURCE
+##############################################################################
 
-  ##############################################################################
-  # TARGETS
-  ##############################################################################
+file(GLOB SRCS src/*.c)
+file(GLOB HDRS src/*.h)
 
-  add_definitions(-fPIC)
-  add_library(ndio-ffmpeg MODULE ${SRCS} ${HDRS})
-  target_link_libraries(ndio-ffmpeg ${FFMPEG_LIBRARIES} nd)
-  set_target_properties(ndio-ffmpeg PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
-  add_dependencies(ndio-ffmpeg ffmpeg)
+##############################################################################
+# TARGETS
+##############################################################################
 
-  ## Copy FFMPEG shared libs to plugin build dir so build functions in place
-  if(MSVC)
-    foreach(cfg ${CMAKE_CONFIGURATION_TYPES})
-      file(COPY ${FFMPEG_SHARED_LIBS} DESTINATION "${PROJECT_BINARY_DIR}/${cfg}") 
-    endforeach(cfg)
-  endif()
-endif(FFMPEG_FOUND)
+add_definitions(-fPIC)
+add_library(ndio-ffmpeg MODULE ${SRCS} ${HDRS})
+target_link_libraries(ndio-ffmpeg ${FFMPEG_LIBRARIES} ${ND_LIBRARIES})
+set_target_properties(ndio-ffmpeg PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
+add_dependencies(ndio-ffmpeg ffmpeg)
+
+## Copy FFMPEG shared libs to plugin build dir so build functions in place
+if(MSVC)
+  foreach(cfg ${CMAKE_CONFIGURATION_TYPES})
+    file(COPY ${FFMPEG_SHARED_LIBS} DESTINATION "${PROJECT_BINARY_DIR}/${cfg}") 
+  endforeach(cfg)
+endif()
 
 ################################################################################
 #  Documentation
