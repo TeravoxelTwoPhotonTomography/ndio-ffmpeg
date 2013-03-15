@@ -24,12 +24,10 @@ set(ROOT_3RDPARTY_DIR ${PROJECT_SOURCE_DIR})
 find_package(ND     CONFIG PATHS cmake)
 find_package(FFMPEG CONFIG PATHS cmake)
 
-include_directories(${ND_INCLUDE_DIR})
+include_directories(${ND_INCLUDE_DIRS})
 include_directories(${FFMPEG_INCLUDE_DIR})
 
 get_directory_property(ND_SOURCE_DIR PARENT_DIRECTORY)
-
-include_directories(${ND_SOURCE_DIR}) # from parent scope
 
 ##############################################################################
 # SOURCE
@@ -76,10 +74,13 @@ endif()
 ################################################################################
 #  Install
 ################################################################################
-install(TARGETS ndio-ffmpeg
-  EXPORT ndio-ffmpeg-targets
-  RUNTIME DESTINATION bin/${NDIO_PLUGIN_PATH}
-  LIBRARY DESTINATION bin/${NDIO_PLUGIN_PATH}
+foreach(_path ${NDIO_PLUGIN_PATH})
+  install(TARGETS ndio-ffmpeg 
+    RUNTIME DESTINATION ${_path}
+    LIBRARY DESTINATION ${_path})
+endforeach()
+install(TARGETS ndio-ffmpeg 
+  RUNTIME DESTINATION bin/plugins
+  LIBRARY DESTINATION bin/plugins
 )
-#export(TARGETS ndio-ffmpeg FILE ndio-ffmpeg-targets.cmake)
-#install(EXPORT ndio-ffmpeg-targets DESTINATION cmake)
+
