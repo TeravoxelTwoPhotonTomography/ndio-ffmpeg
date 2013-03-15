@@ -46,7 +46,7 @@ add_definitions(-fPIC)
 add_library(ndio-ffmpeg MODULE ${SRCS} ${HDRS})
 target_link_libraries(ndio-ffmpeg ${FFMPEG_LIBRARIES} ${ND_LIBRARIES})
 set_target_properties(ndio-ffmpeg PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
-add_dependencies(ndio-ffmpeg ffmpeg)
+add_dependencies(ndio-ffmpeg ffmpeg nd)
 
 ## Copy FFMPEG shared libs to plugin build dir so build functions in place
 if(MSVC)
