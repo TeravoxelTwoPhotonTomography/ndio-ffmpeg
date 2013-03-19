@@ -46,6 +46,8 @@ target_link_libraries(ndio-ffmpeg ${FFMPEG_LIBRARIES} ${ND_LIBRARIES})
 set_target_properties(ndio-ffmpeg PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
 add_dependencies(ndio-ffmpeg ffmpeg nd)
 
+add_subdirectory(app/bench)
+
 ## Copy FFMPEG shared libs to plugin build dir so build functions in place
 if(MSVC)
   foreach(cfg ${CMAKE_CONFIGURATION_TYPES})
