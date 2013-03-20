@@ -7,7 +7,7 @@
 #define REPORT(estr) LOG("%s(%d): %s()\n\t%s\n\tEvaluated to false.\n",__FILE__,__LINE__,__FUNCTION__,estr)
 #define TRY(e)       do{if(!(e)){REPORT(#e);goto Error;}}while(0)
 
-#define ITER (10000)
+#define ITER (1000)
 
 nd_t fill(nd_t a)
 { unsigned short *d=(unsigned short*)nddata(a);
@@ -29,9 +29,15 @@ int main(int argc, char* argv[])
            a=0,
        times=0;    
   ndio_t   f=0;
+
+  TRY(ndcast(ndreshapev(shape=ndinit(),1,ITER),nd_f64));
+  TRY(times=ndheap(shape));
+  ndfree(shape);
+  shape=0;
+
   ndioClose(f=ndioOpen("test.mp4",NULL,"r")); 
   if(!f) // if the file exists and is readible, skip generation
-  { TRY(ndcast(ndreshapev(ndinit(),3,512,512,512),nd_u16));
+  { TRY(ndcast(ndreshapev(shape=ndinit(),3,512,512,512),nd_u16));
     TRY(a=fill(ndheap(shape)));
     ndioClose(ndioWrite(f=ndioOpen("test.mp4",NULL,"w"),a));
     TRY(f);
@@ -44,14 +50,12 @@ int main(int argc, char* argv[])
   { 
     size_t i,ndim,origin[8]={0},max; // max 8 dims
     double *t=nddata(times);
-    TRY(ndcast(ndreshapev(ndinit(),1,ITER),nd_f64));
-    TRY(ndref(times=ndinit(),malloc(ITER*sizeof(double)),nd_heap));
 
     TRY(f=ndioOpen("test.mp4",NULL,"r"));
     shape=ndioShape(f);
     ndim=ndndim(shape);
     max=ndshape(shape)[2]; // should be 512
-    shape=ndreshape(shape,2,ndshape(shape)); // one plane of the input
+    ndshape(shape)[2]=1;   // one plane of the input
     TRY(a=ndheap(shape));
 
     TRY(ndioReadSubarray(f,a,step(origin,max),NULL));

@@ -562,12 +562,10 @@ static void zero(AVFrame *p)
 
     \returns 1 on success, 0 otherwise.
  */
-static int next(ndio_t file,nd_t plane,int64_t iframe)
+static int next(ndio_t file,nd_t plane,int64_t iframe, int64_t ichan)
 { ndio_ffmpeg_t self;
   AVPacket packet = {0};
   int yielded = 0;
-  nd_t tmp=ndinit();
-  ndreshapev(tmp,2,640,480);
   TRY(self=(ndio_ffmpeg_t)ndioContext(file));
   do
   { yielded=0;
@@ -598,10 +596,12 @@ static int next(ndio_t file,nd_t plane,int64_t iframe)
     int lines[4]={0};
     const int lst = (int) ndstrides(plane)[1],
               cst = (int) ndstrides(plane)[ndndim(plane)-1];
+    int n = ndndim(plane)>2?(int) ndshape(plane)[ndndim(plane)-1]:1;
     int i;
-    for(i=0;i<countof(planes);++i)
-    { lines[i]=lst;
-      planes[i]=(uint8_t*)nddata(plane)+cst*i;
+    n=n>countof(planes)?countof(planes):n;
+    for(i=0;i<n;++i)
+    { lines[i+ichan]=lst;
+      planes[i+ichan]=(uint8_t*)nddata(plane)+cst*i;
     }
     sws_scale(self->sws,              // sws context
               (const uint8_t*const*)self->raw->data, // src slice
@@ -612,7 +612,6 @@ static int next(ndio_t file,nd_t plane,int64_t iframe)
               lines);                 // dst line stride
   }
   av_free_packet(&packet); // For rawvideo, the packet.data is referenced by raw->data, so free here.
-  ndfree(tmp);
   return 1;
 Error:
   av_free_packet( &packet );
@@ -664,7 +663,7 @@ static unsigned read_ffmpeg(ndio_t file, nd_t a)
   void *o=nddata(a);
   TRY(seek(file,0));
   for(i=0;i<nframes(file);++i,ndoffset(a,2,1))
-    TRY(next(file,a,i));
+    TRY(next(file,a,i,0));
   ndref(a,o,ndkind(a));
   return 1;
 Error:
@@ -681,16 +680,17 @@ static unsigned canseek_ffmpeg(ndio_t file, size_t idim)
 
 /**
  * Seek
+ * pos should be an array with ndndim(ndioShape(file)) elements.
  */
 static unsigned seek_ffmpeg(ndio_t file,nd_t a,size_t *pos)
 { ndio_ffmpeg_t self;
-  size_t i;
+  size_t i=pos[2];           // WARNING: assumes shape_ffmpeg always returns at least a 3 dimensional shape even when width and nchan is 1.
   TRY(self=(ndio_ffmpeg_t)ndioContext(file));
   TRY(ndndim(a)>=2);
-  i=(ndndim(a)>2)?pos[2]:0;
+  //i=(ndndim(a)>2)?pos[2]:0;
   if(i!=self->iframe+1)
     TRY(seek(file,i));
-  TRY(next(file,a,i));
+  TRY(next(file,a,i,pos[3])); // WARNING: assumes shape_ffmpeg always returns a 4 dimensional shape even when nchan is 1.
   return 1;
 Error:
   return 0;
@@ -751,12 +751,12 @@ static unsigned write_ffmpeg(ndio_t file, nd_t a)
           FAIL("Unsupported number of color components");
         TRY(ndcast(ndreshape(tmp=ndinit(),ndndim(a),ndshape(a)),ndtype(a)));
         if(nc==2 || cdim!=0)
-        { if(nc==2) ndShapeSet(tmp,cdim,3); // need to pad to add the third color for RGB
+        { if(nc==2) ndShapeSet(tmp,(int)cdim,3); // need to pad to add the third color for RGB
           TRY(ndfill(ndref(tmp,malloc(ndnbytes(tmp)),nd_heap),0));
         }
         // Then, if necessary, transpose to put color on dim 0 and go from there.
         if(cdim!=0)
-          TRY(ndshiftdim(tmp,a,-cdim));
+          TRY(ndshiftdim(tmp,a,-(int)cdim));
         if(tmp)
         { a=tmp;            // !!! ALIAS ARRAY TO TMP
           s=ndshape(tmp);   // !!! This is by design, but it is confusing.

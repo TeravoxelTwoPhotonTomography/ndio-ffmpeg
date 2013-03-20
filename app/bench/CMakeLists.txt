@@ -1,4 +1,4 @@
-find_package(ND)
+find_package(ND COMPONENTS ndio-hdf5)
 include_directories(ND_INCLUDE_DIRS)
 
 file(GLOB SRCS *.c *.h)
