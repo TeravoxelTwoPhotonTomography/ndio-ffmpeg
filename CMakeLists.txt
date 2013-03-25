@@ -23,6 +23,7 @@ set(ROOT_3RDPARTY_DIR ${PROJECT_SOURCE_DIR})
 
 find_package(ND     CONFIG PATHS cmake)
 find_package(FFMPEG CONFIG PATHS cmake)
+set(ndio-ffmpeg-EXTRAS ${FFMPEG_SHARED_LIBS}) # these will get copied together with the plugin
 
 include_directories(${ND_INCLUDE_DIRS})
 include_directories(${FFMPEG_INCLUDE_DIR})

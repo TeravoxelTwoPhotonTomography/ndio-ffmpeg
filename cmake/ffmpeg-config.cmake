@@ -26,6 +26,7 @@ function(find_msvc_build)
   set(FFMPEG_INCLUDE_DIR     ${prefix}-${arch}-dev/include PARENT_SCOPE)
   set(FFMPEG_LIBRARIES ${FFMPEG_LIBRARIES} PARENT_SCOPE)
   set(FFMPEG_DLLS      ${FFMPEG_DLLS}      PARENT_SCOPE)
+  set(FFMPEG_SHARED_LIBS ${FFMPEG_DLLS}    PARENT_SCOPE)
 endfunction(find_msvc_build)
 
 if(MSVC)

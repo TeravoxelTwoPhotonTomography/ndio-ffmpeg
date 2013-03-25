@@ -322,11 +322,14 @@ static ndio_ffmpeg_t open_reader(const char* path)
   return self;
 Error:
   if(self)
-  { if(CCTX(self)) avcodec_close(CCTX(self));
+  { if(self->fmt)
+    { if(CCTX(self)) avcodec_close(CCTX(self));
+      avformat_free_context(self->fmt);
+    }
     if(self->opts) av_dict_free(&self->opts);
     if(self->raw)  av_free(self->raw);
     if(self->sws)  sws_freeContext(self->sws);
-    if(self->fmt)  avformat_free_context(self->fmt);
+    
     free(self);
   }
   return NULL;
