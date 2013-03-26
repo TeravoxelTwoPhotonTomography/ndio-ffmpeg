@@ -54,8 +54,14 @@ if(NOT ND_LIBRARIES)
 endif()
 
 ### Handle components
+# component name and the imported target must be the same
 foreach(package ${ND_FIND_COMPONENTS})
   find_package(${package} CONFIG PATHS .)
+  get_property(plugin TARGET ${package} PROPERTY LOCATION)
+  if(plugin) ## should remove this when I add config files for the plugins?
+    set(ND_${package}_FOUND TRUE)
+  endif()
+  install(FILES ${plugin} DESTINATION bin/plugins)
 endforeach()
 
 ### Check everything got found
@@ -67,12 +73,43 @@ find_package_handle_standard_args(ND
 )
 
 ### macro for copying plugins to a target's build Location
-macro(nd_copy_plugins_to_target _target)
-    add_custom_command(TARGET ${_target} POST_BUILD
-      COMMAND ${CMAKE_COMMAND} -E copy_directory
-          ${INSTALL_DIR}/bin/plugins
-          $<TARGET_FILE_DIR:${_target}>/plugins
-          COMMENT "Copying libnd plugins to build path for ${_target}."
-          )  
-    add_dependencies(${_target} libnd)
-endmacro()
+# component name and the imported target must be the same
+#
+# plugins should define an "Extras" variable named <plugin>-EXTRAS
+# that has an extra files (eg associated shared libraries) to be copied
+# along side the plugin.
+function(nd_copy_plugins_to_target _target _plugins)
+    list(REMOVE_AT ARGV 0)
+    foreach(package ${ARGV})      
+      if(NOT TARGET ${package})
+        find_package(${package} CONFIG PATHS .)
+      endif()
+      if(TARGET ${package})
+        get_property(plugin TARGET ${package} PROPERTY LOCATION)
+        if(plugin)
+          message(STATUS "Configuring ${package} to be copied to build path for ${_target}.")
+          add_custom_command(TARGET ${_target} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:${_target}>/plugins/
+            COMMAND ${CMAKE_COMMAND} -E copy
+                ${plugin}
+                $<TARGET_FILE_DIR:${_target}>/plugins
+                COMMENT "Copying ${package} to build path for ${_target}."
+                )
+          add_dependencies(${_target} ${package})
+          # extras
+          if(${package}-EXTRAS)
+            message(STATUS "Configuring ${package} extras to be copied to build path for ${_target}.")
+            foreach(extra ${${package}-EXTRAS})
+            add_custom_command(TARGET ${_target} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:${_target}>/plugins/
+                COMMAND ${CMAKE_COMMAND} -E copy
+                    ${extra}
+                    $<TARGET_FILE_DIR:${_target}>/plugins
+                    COMMENT "Copying ${extra} to build path for ${_target}."
+                    )           
+            endforeach()
+          endif()
+        endif()
+      endif()
+    endforeach()
+endfunction()
