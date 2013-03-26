@@ -12,7 +12,7 @@ if(NOT ND_LIBRARIES)
   set(ND_GIT_REPOSITORY ssh://git@bitbucket.org/nclack/nd.git CACHE STRING "Location of the git repository for libnd.")
   ExternalProject_Add(libnd
     GIT_REPOSITORY ${ND_GIT_REPOSITORY}
-    GIT_TAG spin-off-plugins
+    # GIT_TAG spin-off-plugins
     # UPDATE_COMMAND ""
     # UPDATE_COMMAND ${GIT_EXECUTABLE} pull origin master
     LIST_SEPARATOR ^^
