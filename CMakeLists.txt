@@ -78,21 +78,18 @@ endif()
 #  Install
 ################################################################################
 foreach(_path ${NDIO_PLUGIN_PATH})
-  install(TARGETS ndio-ffmpeg EXPORT ndio-ffmpeg-targets
+  install(TARGETS ndio-ffmpeg
     RUNTIME DESTINATION ${_path}
     LIBRARY DESTINATION ${_path})
-  install(FILES ${ndio-ffmpeg-EXTRAS} EXPORT ndio-ffmpeg-targets
-    RUNTIME DESTINATION ${_path}
-    LIBRARY DESTINATION ${_path})
+  install(FILES ${ndio-ffmpeg-EXTRAS}
+            DESTINATION ${_path})
 endforeach()
 install(TARGETS ndio-ffmpeg EXPORT ndio-ffmpeg-targets
   RUNTIME DESTINATION bin/plugins
   LIBRARY DESTINATION bin/plugins
 )
 show(ndio-ffmpeg-EXTRAS)
-install(FILES ${ndio-ffmpeg-EXTRAS} EXPORT ndio-ffmpeg-targets
-  DESTINATION bin/plugin
-)
+install(FILES ${ndio-ffmpeg-EXTRAS} DESTINATION bin/plugins)
 install(EXPORT ndio-ffmpeg-targets DESTINATION cmake)
 export(TARGETS ndio-ffmpeg FILE ndio-ffmpeg-config.cmake)
 export(PACKAGE ndio-ffmpeg)
