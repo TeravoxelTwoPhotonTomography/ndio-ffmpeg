@@ -23,7 +23,15 @@ set(ROOT_3RDPARTY_DIR ${PROJECT_SOURCE_DIR})
 
 find_package(ND     CONFIG PATHS cmake)
 find_package(FFMPEG CONFIG PATHS cmake)
-set(ndio-ffmpeg-EXTRAS ${FFMPEG_SHARED_LIBS}) # these will get copied together with the plugin
+# Set ndio-ffmpeg-EXTRAS: these will get copied together with the plugin
+foreach(_lib ${FFMPEG_SHARED_LIBS})
+  if(TARGET ${_lib})
+    get_target_property(_loc ${_lib} LOCATION)
+  else()
+    set(_loc ${_lib})
+  endif()
+  list(APPEND ndio-ffmpeg-EXTRAS ${_loc}) 
+endforeach()
 
 include_directories(${ND_INCLUDE_DIRS})
 include_directories(${FFMPEG_INCLUDE_DIR})
@@ -41,7 +49,6 @@ file(GLOB HDRS src/*.h)
 # TARGETS
 ##############################################################################
 
-add_definitions(-fPIC)
 add_library(ndio-ffmpeg MODULE ${SRCS} ${HDRS})
 target_link_libraries(ndio-ffmpeg ${FFMPEG_LIBRARIES} ${ND_LIBRARIES})
 set_target_properties(ndio-ffmpeg PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
