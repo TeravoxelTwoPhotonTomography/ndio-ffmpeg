@@ -4,6 +4,7 @@ if(ND_FOUND) # if a component is missing this will be false
   file(GLOB SRCS *.c *.h)
   add_executable(bench ${SRCS})
   target_link_libraries(bench ${ND_LIBRARIES})
+  add_dependencies(bench ndio-hdf5)
   nd_copy_plugins_to_target(bench ndio-hdf5 ndio-ffmpeg)
   install(TARGETS bench EXPORT ndio-ffmpeg-targets DESTINATION bin)
 endif()
