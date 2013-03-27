@@ -38,6 +38,12 @@ include_directories(${FFMPEG_INCLUDE_DIR})
 
 get_directory_property(ND_SOURCE_DIR PARENT_DIRECTORY)
 
+set(RPATH \$ORIGIN)
+if(APPLE)
+  set(RPATH @rpath)
+endif()
+
+
 ##############################################################################
 # SOURCE
 ##############################################################################
@@ -51,7 +57,10 @@ file(GLOB HDRS src/*.h)
 
 add_library(ndio-ffmpeg MODULE ${SRCS} ${HDRS})
 target_link_libraries(ndio-ffmpeg ${FFMPEG_LIBRARIES} ${ND_LIBRARIES})
-set_target_properties(ndio-ffmpeg PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
+set_target_properties(ndio-ffmpeg PROPERTIES 
+  POSITION_INDEPENDENT_CODE TRUE
+  INSTALL_RPATH             ${RPATH}
+)
 add_dependencies(ndio-ffmpeg ffmpeg nd)
 
 add_subdirectory(app/bench)
