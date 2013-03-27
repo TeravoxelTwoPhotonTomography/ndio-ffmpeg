@@ -43,7 +43,7 @@ if(MSVC)
   ### INSTALL
   install(FILES ${FFMPEG_DLLS} DESTINATION bin/plugins)
 else()
-  GenerateFFMPEG(http://github.com/FFmpeg/FFmpeg.git n0.11.1)
+  GenerateFFMPEG(http://github.com/FFmpeg/FFmpeg.git release/1.2)
 endif()
 find_package_handle_standard_args(FFMPEG DEFAULT_MSG
   FFMPEG_LIBRARIES
