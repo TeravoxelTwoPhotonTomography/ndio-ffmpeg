@@ -107,5 +107,11 @@ install(TARGETS ndio-ffmpeg EXPORT ndio-ffmpeg-targets
 show(ndio-ffmpeg-EXTRAS)
 install(FILES ${ndio-ffmpeg-EXTRAS} DESTINATION bin/plugins)
 install(EXPORT ndio-ffmpeg-targets DESTINATION cmake)
-export(TARGETS ndio-ffmpeg FILE ndio-ffmpeg-config.cmake)
+export(TARGETS ndio-ffmpeg FILE ndio-ffmpeg-targets.cmake)
 export(PACKAGE ndio-ffmpeg)
+
+configure_file(
+  ${PROJECT_SOURCE_DIR}/ndio-ffmpeg-config.cmake.in
+  ${PROJECT_BINARY_DIR}/ndio-ffmpeg-config.cmake 
+  @ONLY
+)

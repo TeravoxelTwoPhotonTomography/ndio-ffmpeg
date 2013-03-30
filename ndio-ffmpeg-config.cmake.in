@@ -1,0 +1,11 @@
+if(NOT TARGET ndio-ffmpeg)
+  include(@CMAKE_CURRENT_BINARY_DIR@/ndio-ffmpeg-targets.cmake)
+endif() 
+
+# Get the extra shared libraries
+# This gets used after ndio-ffmpeg is built, so the extras should
+# already exist.
+# There's not a super good place to just glob them from, so 
+# the ndio-ffmpeg-EXTRAS variable from configure time will be used.
+
+set(ndio-ffmpeg-EXTRAS @ndio-ffmpeg-EXTRAS@)
