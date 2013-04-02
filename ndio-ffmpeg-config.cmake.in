@@ -8,4 +8,4 @@ endif()
 # There's not a super good place to just glob them from, so 
 # the ndio-ffmpeg-EXTRAS variable from configure time will be used.
 
-set(ndio-ffmpeg-EXTRAS @ndio-ffmpeg-EXTRAS@)
+file(GLOB ndio-ffmpeg-EXTRAS @CMAKE_INSTALL_PREFIX@/bin/plugins/*)
