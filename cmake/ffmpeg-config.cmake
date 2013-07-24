@@ -8,7 +8,7 @@
 #   FFMPEG_LIBRARIES
 #   FFMPEG_INCLUDE_DIR
 
-include(GenerateFFMPEG)
+include(${CMAKE_SOURCE_DIR}/cmake/GenerateFFMPEG.cmake)
 include(FindPackageHandleStandardArgs)
 
 function(find_msvc_build)

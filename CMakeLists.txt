@@ -18,11 +18,10 @@ endmacro()
 ################################################################################
 # CONFIG
 ################################################################################
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
 set(ROOT_3RDPARTY_DIR ${PROJECT_SOURCE_DIR})
 
-find_package(ND     CONFIG PATHS cmake)
-find_package(FFMPEG CONFIG PATHS cmake)
+find_package(ND     PATHS cmake)
+find_package(FFMPEG PATHS cmake)
 # Set ndio-ffmpeg-EXTRAS: these will get copied together with the plugin
 foreach(_lib ${FFMPEG_SHARED_LIBS})
   if(TARGET ${_lib})

@@ -14,15 +14,10 @@ if(NOT TARGET libx264)
   )
 endif()
 
-set(EXTRAS)
-if(UNIX) # also apple
-  set(EXTRAS m pthread ${CMAKE_DL_LIBS})
-endif()
-
 ExternalProject_Get_Property(libx264 INSTALL_DIR)
 set(X264_INCLUDE_DIR ${INSTALL_DIR}/include)
 set(X264_LIBRARY   x264)
-set(X264_LIBRARIES x264 ${EXTRAS})
+set(X264_LIBRARIES x264)
 
 foreach(tgt ${X264_LIBRARIES})
   add_library(${tgt} IMPORTED STATIC)

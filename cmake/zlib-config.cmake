@@ -14,8 +14,8 @@ if(NOT TARGET libz)
   set( _SOURCE_DIR "${PROJECT_BINARY_DIR}/libz-prefix/src/libz" ) # Assumes default prefix path
   configure_file(  "${PROJECT_SOURCE_DIR}/cmake/zlib-patch.cmake.in" "${_PATCH_FILE}" @ONLY )
   ExternalProject_Add(libz
-    URL        http://zlib.net/zlib-1.2.7.tar.gz
-    URL_MD5    60df6a37c56e7c1366cca812414f7b85
+    URL        http://zlib.net/zlib-1.2.8.tar.gz
+    URL_MD5    44d667c142d7cda120332623eab69f40
     #For MSVC x64: a patch is required to deal with static libraries 
     #that use an rc file (such a zlibstatic)
     PATCH_COMMAND "${CMAKE_COMMAND};-P;${_PATCH_FILE}" 

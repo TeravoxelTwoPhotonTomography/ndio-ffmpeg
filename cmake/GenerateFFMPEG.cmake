@@ -119,9 +119,11 @@ function(GenerateFFMPEG GIT_URL GIT_TAG)
   _ffmpeg_maybe_add(VPX    libvpx    "An open, royalty-free, media file format for the web." http://www.webmproject.org/code)
   _ffmpeg_maybe_add(xvid   libxvid   "The XVID video codec." http://www.xvid.org)
 
-  #if(X264_FOUND) #X264 requires gpl
-  #  set(_ffmpeg_conf ${_ffmpeg_conf} --enable-gpl)
-  #endif()
+  if(X264_FOUND) #X264 uses opencl which seems to need libdl
+    if(CMAKE_DL_LIBS)
+      list(APPEND _ffmpeg_conf --extra-libs=-l${CMAKE_DL_LIBS})
+    endif()
+  endif()
 
   ## Finish up - must be after _ffmpeg_maybe_add section
   #  Add library paths for each library to config's cflags
