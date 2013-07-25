@@ -19,6 +19,11 @@ endmacro()
 # CONFIG
 ################################################################################
 set(ROOT_3RDPARTY_DIR ${PROJECT_SOURCE_DIR})
+set(RPATH \$ORIGIN)
+if(APPLE)
+  set(RPATH @rpath)
+endif()
+set(CMAKE_INSTALL_RPATH ${RPATH})
 
 find_package(ND     PATHS cmake)
 find_package(FFMPEG PATHS cmake)
