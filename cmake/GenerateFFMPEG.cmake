@@ -149,6 +149,7 @@ function(GenerateFFMPEG GIT_URL GIT_TAG)
             --enable-gpl
             --enable-pic
             --disable-symver
+            --disable-iconv
             --enable-shared
             --enable-hardcoded-tables
             --enable-runtime-cpudetect
