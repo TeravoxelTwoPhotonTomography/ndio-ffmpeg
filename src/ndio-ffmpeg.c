@@ -200,7 +200,7 @@ enum PixelFormat to_pixfmt(int nbytes, int ncomponents)
 /** Recommend output pixel format based on intermediate pixel format. */
 enum PixelFormat pixfmt_to_output_pixfmt(int pxfmt)
 { uint8_t flags = av_pix_fmt_descriptors[pxfmt].flags;
-  int ncomponents   =av_pix_fmt_descriptors[pxfmt].nb_components;
+  int ncomponents   =1; // <--force one channel output //av_pix_fmt_descriptors[pxfmt].nb_components;
   int bits_per_pixel=av_get_bits_per_pixel(av_pix_fmt_descriptors+pxfmt);
   int bytes=ncomponents?(int)ceil(bits_per_pixel/ncomponents/8.0f):0;
   //if(flags&(PIX_FMT_PAL|PIX_FMT_PSEUDOPAL))
@@ -237,23 +237,24 @@ Error:
   goto Finalize;
 }
 
-/** 
+/**
  * Just does matching of the extension to a format shortname registered with ffmpeg.
- * \returns true if the file is readible using this interface. 
+ * \returns true if the file is readible using this interface.
  */
 static unsigned test_readable(const char *path)
-{ 
-#if 1  
+{
+#if 0
   AVInputFormat *fmt=0;
   const char *ext;
   ext=(ext=strrchr(path,'.'))?(ext+1):""; // yields something like "mp4" or, if no extension found, "".
   while( fmt=av_iformat_next(fmt) )
-  { if(in(ext,fmt->name))
+  { LOG("%s\n",fmt->name);
+    if(in(ext,fmt->name))
       return 1;
   }
   return fmt!=0;
 #endif
-#if 0  // This approach tries to open the file.  Too expensive. 
+#if 1  // This approach tries to open the file.  Too expensive.
   AVFormatContext *fmt=0;
   // just check that container can be opened; don't worry about streams, etc...
   if(0==avformat_open_input(&fmt,path,NULL/*input format*/,NULL/*options*/))
@@ -278,7 +279,7 @@ static unsigned test_writable(const char *path)
 { AVOutputFormat *fmt=0;
   const char *ext;
   ext=(ext=strrchr(path,'.'))?(ext+1):""; // yields something like "mp4" or, if no extension found, "".
-  while( fmt=av_oformat_next(fmt) )
+  while( (fmt=av_oformat_next(fmt)) )
   { //LOG("%s\n",fmt->name);
     if(in(ext,fmt->name))
       return fmt->video_codec!=CODEC_ID_NONE;
@@ -329,7 +330,7 @@ Error:
     if(self->opts) av_dict_free(&self->opts);
     if(self->raw)  av_free(self->raw);
     if(self->sws)  sws_freeContext(self->sws);
-    
+
     free(self);
   }
   return NULL;
@@ -351,7 +352,7 @@ static ndio_ffmpeg_t open_writer(const char* path)
   TRY(0==(self->fmt->flags&AVFMT_NOFILE));                              //if the flag is set, don't need to open the file (I think).  Assert here so I get notified of when this happens.  Expected to be rare/never.
   AVTRY(avio_open(&self->fmt->pb,path,AVIO_FLAG_WRITE),"Failed to open output file.");
   CCTX(self)->codec=codec;
-  AVTRY(CCTX(self)->pix_fmt=codec->pix_fmts[0],"Codec indicates that no pixel formats are supported.");  
+  AVTRY(CCTX(self)->pix_fmt=codec->pix_fmts[0],"Codec indicates that no pixel formats are supported.");
   return self;
 Error:
   if(self->fmt->pb) avio_close(self->fmt->pb);
@@ -519,14 +520,20 @@ static nd_t shape_ffmpeg(ndio_t file)
     } while(packet.stream_index!=self->istream);
     AVTRY(avcodec_decode_video2(cctx,self->raw,&fin,&packet),"Failed to decode frame.");
     av_free_packet(&packet);
-    AVTRY(av_seek_frame(self->fmt,self->istream,0,AVSEEK_FLAG_BACKWARD/*flags*/),"Failed to seek to beginning.");
+    //AVTRY(av_seek_frame(self->fmt,self->istream,0,AVSEEK_FLAG_BACKWARD/*flags*/),
+    //      "Failed to seek to beginning.");
+    /*
+    For the image2 format (image sequences etc...), backwards seek isn't supported.
+    So we silently ignore failure?
+     */
+    av_seek_frame(self->fmt,self->istream,0,AVSEEK_FLAG_BACKWARD/*flags*/);
   }
   d=(int)self->nframes;
   w=cctx->width;
   h=cctx->height;
   TRY(pixfmt_to_nd_type(pixfmt_to_output_pixfmt(cctx->pix_fmt),&type,&c));
   { nd_t out=ndinit();
-    size_t k,shape[]={w,h,d,c};
+    size_t k=4,shape[]={w,h,d,c};
     k=pack(shape,countof(shape));
     ndcast(out,type);
     ndreshape(out,(unsigned)k,shape);
@@ -576,10 +583,10 @@ static int next(ndio_t file,nd_t plane,int64_t iframe, int64_t ichan)
     AVTRY(av_read_frame(self->fmt,&packet),"Failed to read frame.");   // !!NOTE: see docs on packet.convergence_duration for proper seeking
     if(packet.stream_index!=self->istream)
       continue;
-    AVTRY(avcodec_decode_video2(CCTX(self),self->raw,&yielded,&packet),NULL);    
+    AVTRY(avcodec_decode_video2(CCTX(self),self->raw,&yielded,&packet),NULL);
     // Handle odd cases and debug
     if(CCTX(self)->codec_id==CODEC_ID_RAWVIDEO)
-    { if(!yielded) zero(self->raw); // Emit a blank frame. Something off about the stream.  Raw should always yield.           
+    { if(!yielded) zero(self->raw); // Emit a blank frame. Something off about the stream.  Raw should always yield.
       yielded=1;
     }
     DEBUG_PRINT_PACKET_INFO;
@@ -632,11 +639,12 @@ static int seek(ndio_t file, int64_t iframe)
   TRY(iframe>=0 && iframe<self->nframes);
   // AVSEEK_FLAG_BACKWARD determines the direction to go from the sought timestamp
   // to find a keyframe.
-  AVTRY(avformat_seek_file( self->fmt,       //format context
+  //AVTRY(
+  avformat_seek_file( self->fmt,       //format context
                             self->istream,   //stream id
                             0,ts,ts,          //min,target,max timestamps
-                            AVSEEK_FLAG_BACKWARD|AVSEEK_FLAG_FRAME),//flags
-                            "Failed to seek.");
+                            AVSEEK_FLAG_BACKWARD|AVSEEK_FLAG_FRAME);//,//flags
+                            //"Failed to seek.");
 //(necessary?)  avcodec_flush_buffers(CCTX(self));
   return 1;
 Error:
@@ -730,7 +738,7 @@ static unsigned write_ffmpeg(ndio_t file, nd_t a)
   TRY(self=(ndio_ffmpeg_t)ndioContext(file));
   cctx=CCTX(self);
   s=ndshape(a);
-  
+
   { // maybe flip signed ints to unsigned
     static const nd_type_id_t tmap[] = {
       nd_id_unknown,nd_id_unknown,nd_id_unknown,nd_id_unknown,
@@ -742,7 +750,7 @@ static unsigned write_ffmpeg(ndio_t file, nd_t a)
       TRY(ndconvert_ip(a,t));
     }
   }
- 
+
   switch(ndndim(a)) // Map dimensions to space, time and color
   { case 2:      c=1;         w=(int)s[0]; h=(int)s[1]; d=1;         break;// w,h
     case 3:      c=1;         w=(int)s[0]; h=(int)s[1]; d=(int)s[2]; break;// w,h,d
@@ -763,7 +771,7 @@ static unsigned write_ffmpeg(ndio_t file, nd_t a)
         if(tmp)
         { a=tmp;            // !!! ALIAS ARRAY TO TMP
           s=ndshape(tmp);   // !!! This is by design, but it is confusing.
-        }        
+        }
         c=(int)s[0]; w=(int)s[1]; h=(int)s[2]; d=(int)s[3];// c,w,h,d
       }
       break;

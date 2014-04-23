@@ -2,12 +2,23 @@
 #include "tictoc.h"
 #include <stdlib.h> // for rand
 #include <stdio.h>  // for printf
+#include <string.h> // for argument parsing
 
 #define LOG(...)     printf(__VA_ARGS__)
 #define REPORT(estr) LOG("%s(%d): %s()\n\t%s\n\tEvaluated to false.\n",__FILE__,__LINE__,__FUNCTION__,estr)
 #define TRY(e)       do{if(!(e)){REPORT(#e);goto Error;}}while(0)
 
-#define ITER (1000)
+#define ITER (10000)
+
+char *basename(char *path)
+{
+  char *base = strrchr(path, '/');   //try posix path sep 1st
+  base=base?base:strrchr(path,'\\'); //windows path sep 2nd
+  return base ? base+1 : path;
+}
+void usage(const char* basename)
+{ printf("\n\tUsage: %s [random|sequence]\n\n",basename);
+}
 
 nd_t fill(nd_t a)
 { unsigned short *d=(unsigned short*)nddata(a);
@@ -17,18 +28,33 @@ nd_t fill(nd_t a)
   return a;
 }
 
-size_t* step(size_t *origin, int max )
+typedef size_t* (*stepper_t)(size_t *origin, int max );
+size_t* step_random(size_t *origin, int max )
 { origin[2]=rand()%max;
   return origin;
 }
+size_t* step_sequential(size_t *origin, int max )
+{ origin[2]=(origin[2]+1)%max;
+  return origin;
+}
 
+stepper_t argparse(int argc,char*argv[])
+{ if(argc!=2) goto Error;
+  if(strcmp(argv[1],"random"  )==0) return step_random;
+  if(strcmp(argv[1],"sequence")==0) return step_sequential;
+Error:
+  usage(basename(argv[0]));
+  return 0;
+}
 
 int main(int argc, char* argv[])
 { int  eflag=0;
   nd_t shape=0,
            a=0,
-       times=0;    
+       times=0;
   ndio_t   f=0;
+  stepper_t step=0;
+  TRY(step=argparse(argc,argv));
 
   TRY(ndcast(ndreshapev(shape=ndinit(),1,ITER),nd_f64));
   TRY(times=ndheap(shape));
@@ -43,11 +69,11 @@ int main(int argc, char* argv[])
     TRY(f);
     ndfree(a);
     ndfree(shape);
-    a=shape=0;    
+    a=shape=0;
   }
   f=0;
 
-  { 
+  {
     size_t i,ndim,origin[8]={0},max; // max 8 dims
     double *t=nddata(times);
 

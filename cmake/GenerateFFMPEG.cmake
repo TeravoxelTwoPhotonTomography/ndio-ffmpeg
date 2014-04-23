@@ -149,7 +149,6 @@ function(GenerateFFMPEG GIT_URL GIT_TAG)
             --enable-gpl
             --enable-pic
             --disable-symver
-            --disable-iconv
             --enable-shared
             --enable-hardcoded-tables
             --enable-runtime-cpudetect
@@ -158,6 +157,7 @@ function(GenerateFFMPEG GIT_URL GIT_TAG)
             ${_ffmpeg_conf}
             ${_ffmpeg_paths}
   )
+#--disable-iconv
   get_target_property(FFMPEG_ROOT_DIR ffmpeg _EP_INSTALL_DIR)
 
   set(FFMPEG_INCLUDE_DIR ${FFMPEG_ROOT_DIR}/include CACHE PATH "Location of FFMPEG headers.")
