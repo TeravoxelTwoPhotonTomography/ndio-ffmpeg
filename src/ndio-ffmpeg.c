@@ -133,7 +133,7 @@ static void maybe_init()
   is_one_time_inited = 1;
 
   av_log_set_level(0
-#if 0
+#if 1
     |AV_LOG_DEBUG
     |AV_LOG_VERBOSE
     |AV_LOG_INFO
@@ -199,6 +199,14 @@ enum PixelFormat to_pixfmt(int nbytes, int ncomponents)
 
 /** Recommend output pixel format based on intermediate pixel format. */
 enum PixelFormat pixfmt_to_output_pixfmt(int pxfmt)
+{ return PIX_FMT_GRAY16;
+}
+
+/* OLD - this was a bad idea -- trying to infer output pixel type from encoded type.
+         Really need a way to change this as an option.
+         TODO: API for setting decode pixel type 
+
+enum PixelFormat pixfmt_to_output_pixfmt(int pxfmt)
 { uint8_t flags = av_pix_fmt_descriptors[pxfmt].flags;
   int ncomponents   =1; // <--force one channel output //av_pix_fmt_descriptors[pxfmt].nb_components;
   int bits_per_pixel=av_get_bits_per_pixel(av_pix_fmt_descriptors+pxfmt);
@@ -207,6 +215,7 @@ enum PixelFormat pixfmt_to_output_pixfmt(int pxfmt)
   //  return PIX_FMT_RGB;
   return to_pixfmt(bytes,ncomponents);
 }
+*/
 
 
 //
