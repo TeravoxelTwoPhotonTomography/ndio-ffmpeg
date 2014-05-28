@@ -204,7 +204,7 @@ enum PixelFormat pixfmt_to_output_pixfmt(int pxfmt)
 
 /* OLD - this was a bad idea -- trying to infer output pixel type from encoded type.
          Really need a way to change this as an option.
-         TODO: API for setting decode pixel type 
+         TODO: API for setting decode pixel type
 
 enum PixelFormat pixfmt_to_output_pixfmt(int pxfmt)
 { uint8_t flags = av_pix_fmt_descriptors[pxfmt].flags;
@@ -451,7 +451,7 @@ Error:
 }
 
 /** Opens the file at \a path according to the specified \a mode. */
-static void* open_ffmpeg(const char* path, const char *mode)
+static void* open_ffmpeg(ndio_fmt_t *fmt, const char* path, const char *mode)
 {
   switch(mode[0])
   { case 'r': return open_reader(path);
@@ -833,8 +833,8 @@ Error:
 /// @endcond
 
 /** Expose the interface as an ndio plugin. */
-shared const ndio_fmt_t* ndio_get_format_api(void)
-{ static ndio_fmt_t api = {0};
+shared const ndio_api_t* ndio_get_format_api(void)
+{ static ndio_api_t api = {0};
   maybe_init();
   api.name   = name_ffmpeg;
   api.is_fmt = is_ffmpeg;
