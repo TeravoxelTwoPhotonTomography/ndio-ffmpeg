@@ -61,6 +61,8 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "ndio-ffmpeg.h"
+
 // need to define inline before including av* headers on C89 compilers
 #ifdef _MSC_VER
 #define inline __forceinline
@@ -109,7 +111,7 @@ typedef struct _ndio_ffmpeg_t
   int                istream; ///< The stream index.
   int64_t            nframes; ///< Duration of video in frames (for reading)
   int64_t            iframe;  ///< the last requested frame (for seeking)
-  AVDictionary      *opts;    ///< (unused at the moment)
+  AVDictionary      *opts;    ///< for codec private options
 } *ndio_ffmpeg_t;
 
 //
@@ -133,7 +135,7 @@ static void maybe_init()
   is_one_time_inited = 1;
 
   av_log_set_level(0
-#if 1
+#if 0
     |AV_LOG_DEBUG
     |AV_LOG_VERBOSE
     |AV_LOG_INFO
@@ -426,15 +428,24 @@ Error:
 }
 
 /** Intializes the codec context if necessary. */
-static int maybe_init_codec_ctx(ndio_ffmpeg_t self, int width, int height, int fps, int src_pixfmt)
+static int maybe_init_codec_ctx(ndio_ffmpeg_t self, int width, int height, int fps, int src_pixfmt, const ndio_ffmpeg_params_t *params)
 { AVCodecContext *cctx=CCTX(self);
-  AVCodec *codec=cctx->codec;
+  const AVCodec *codec=cctx->codec;
   if(!cctx->width)
   { cctx->width =even(width);
     cctx->height=even(height);
     cctx->time_base.num=1;
     cctx->time_base.den=fps;
     cctx->gop_size=12;
+
+    //if(params->crf>=0) 
+    {
+      AVTRY(av_dict_set(&self->opts,"crf"   ,"18"  ,0),"Failed to set options.");
+      AVTRY(av_dict_set(&self->opts,"preset","slow",0),"Failed to set options."); 
+      AVTRY(av_dict_set(&self->opts,"tune"  ,"film",0),"Failed to set options."); 
+    }
+      //cctx->crf=params->crf;
+    
     AVTRY(avcodec_open2(cctx,codec,&self->opts),"Failed to initialize encoder.");
 
     TRY(self->sws=sws_getContext(
@@ -742,9 +753,11 @@ static unsigned write_ffmpeg(ndio_t file, nd_t a)
   int got_packet;
   nd_type_id_t oldtype=nd_id_unknown;
   nd_t tmp=0; ///< A temporary copy of a may be needed if a transpose is required for channel ordering
+  ndio_ffmpeg_params_t *params=0;
   AVCodecContext *cctx;
 
   TRY(self=(ndio_ffmpeg_t)ndioContext(file));
+  TRY(params=(ndio_ffmpeg_params_t*)ndioGet(file));
   cctx=CCTX(self);
   s=ndshape(a);
 
@@ -791,7 +804,7 @@ static unsigned write_ffmpeg(ndio_t file, nd_t a)
   linestride=(int)ndstrides(a)[ndndim(a)-2];
   colorstride=ndstrides(a)[0];
   TRY(PIX_FMT_NONE!=(pixfmt=to_pixfmt((int)colorstride,c)));
-  TRY(maybe_init_codec_ctx(self,w,h,24,pixfmt));
+  TRY(maybe_init_codec_ctx(self,w,h,24,pixfmt,params));
   if(self->raw->pts==AV_NOPTS_VALUE)
     self->raw->pts=0;
   for(i=0;i<d;++i,++self->raw->pts)
@@ -820,6 +833,30 @@ Error:
   goto Finalize;
 }
 
+struct ffmpeg {
+  ndio_ffmpeg_params_t params;
+  ndio_fmt_t           api;
+};
+
+#define containerof(ptr,type,member) ((type*)( ((char*)(ptr)) - offsetof(type,member) ))
+
+static unsigned set(ndio_fmt_t *fmt, void* param, size_t nbytes) 
+{ struct ffmpeg* ctx=(struct ffmpeg*)containerof(fmt,struct ffmpeg,api);
+  memcpy(&ctx->params,param,nbytes);
+  return 1;
+}
+
+static void* get(ndio_fmt_t *fmt)
+{ struct ffmpeg* ctx=(struct ffmpeg*)containerof(fmt,struct ffmpeg,api);
+  return &ctx->params;
+}
+
+static void finalize(ndio_fmt_t *fmt)
+{ ndio_ffmpeg_params_t *p=ndioFormatGet(fmt);
+  p->crf=-1; // reset default
+}
+
+
 //
 //  === EXPORT ===
 //
@@ -833,8 +870,10 @@ Error:
 /// @endcond
 
 /** Expose the interface as an ndio plugin. */
-shared const ndio_api_t* ndio_get_format_api(void)
-{ static ndio_api_t api = {0};
+shared const ndio_fmt_t* ndio_get_format_api(void)
+{ static ndio_ffmpeg_params_t params={-1};
+  static ndio_fmt_t api = {0};
+  static struct ffmpeg out;
   maybe_init();
   api.name   = name_ffmpeg;
   api.is_fmt = is_ffmpeg;
@@ -845,7 +884,13 @@ shared const ndio_api_t* ndio_get_format_api(void)
   api.write  = write_ffmpeg;
   api.canseek= canseek_ffmpeg;
   api.seek   = seek_ffmpeg;
+  api.set    = set;
+  api.get    = get;
+  api.close_fmt = finalize;
   api.add_plugin=ndioAddPlugin; // useful for dumping files for debugging
-  return &api;
+  // [ ] FIXME do not use a singleton here.
+  out.params = params;
+  out.api    = api;
+  return &out.api;
 }
 
