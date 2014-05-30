@@ -438,14 +438,15 @@ static int maybe_init_codec_ctx(ndio_ffmpeg_t self, int width, int height, int f
     cctx->time_base.den=fps;
     cctx->gop_size=12;
 
-    //if(params->crf>=0) 
     {
-      AVTRY(av_dict_set(&self->opts,"crf"   ,"18"  ,0),"Failed to set options.");
-      AVTRY(av_dict_set(&self->opts,"preset","slow",0),"Failed to set options."); 
-      AVTRY(av_dict_set(&self->opts,"tune"  ,"film",0),"Failed to set options."); 
+      #define SET(k,v) \
+        if(v) AVTRY(av_dict_set(&self->opts,(k),(v),0),"Failed to set options.")
+      SET("crf"   ,params->crf);
+      SET("preset",params->preset);
+      SET("tune"  ,params->tune);
+      #undef SET
     }
-      //cctx->crf=params->crf;
-    
+
     AVTRY(avcodec_open2(cctx,codec,&self->opts),"Failed to initialize encoder.");
 
     TRY(self->sws=sws_getContext(
@@ -840,7 +841,7 @@ struct ffmpeg {
 
 #define containerof(ptr,type,member) ((type*)( ((char*)(ptr)) - offsetof(type,member) ))
 
-static unsigned set(ndio_fmt_t *fmt, void* param, size_t nbytes) 
+static unsigned set(ndio_fmt_t *fmt, void* param, size_t nbytes)
 { struct ffmpeg* ctx=(struct ffmpeg*)containerof(fmt,struct ffmpeg,api);
   memcpy(&ctx->params,param,nbytes);
   return 1;
@@ -853,7 +854,9 @@ static void* get(ndio_fmt_t *fmt)
 
 static void finalize(ndio_fmt_t *fmt)
 { ndio_ffmpeg_params_t *p=ndioFormatGet(fmt);
-  p->crf=-1; // reset default
+  p->crf   ="18";
+  p->preset="slow";
+  p->tune  ="film";
 }
 
 
@@ -871,9 +874,12 @@ static void finalize(ndio_fmt_t *fmt)
 
 /** Expose the interface as an ndio plugin. */
 shared const ndio_fmt_t* ndio_get_format_api(void)
-{ static ndio_ffmpeg_params_t params={-1};
+{ static ndio_ffmpeg_params_t params;
   static ndio_fmt_t api = {0};
   static struct ffmpeg out;
+  params.crf   ="18";
+  params.preset="slow";
+  params.tune  ="film";
   maybe_init();
   api.name   = name_ffmpeg;
   api.is_fmt = is_ffmpeg;

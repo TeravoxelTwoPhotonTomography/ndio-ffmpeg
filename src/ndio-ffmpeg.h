@@ -3,6 +3,8 @@
 #pragma once
 
 typedef struct ndio_ffmpeg_params_t_ {
-  int crf;
+  char *crf;
+  char *preset;
+  char *tune;
 } ndio_ffmpeg_params_t;
 
